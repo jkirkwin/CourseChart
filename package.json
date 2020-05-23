@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/jkirkwin/CourseChart/issues"
   },
-  "homepage": "https://github.com/jkirkwin/CourseChart#readme"
+  "homepage": "https://github.com/jkirkwin/CourseChart#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
