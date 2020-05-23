@@ -1,0 +1,19 @@
+{
+  "name": "coursechart",
+  "version": "1.0.0",
+  "description": "A visual tool to show the relationships between courses at UVic.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jkirkwin/CourseChart.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jkirkwin/CourseChart/issues"
+  },
+  "homepage": "https://github.com/jkirkwin/CourseChart#readme"
+}
