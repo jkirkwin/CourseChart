@@ -1,6 +1,8 @@
 # CourseChart
 A visual tool to show the relationships between courses at UVic.
 
+[![Master Branch Build Status](https://travis-ci.com/jkirkwin/CourseChart.svg?branch=master)](https://travis-ci.com/jkirkwin/CourseChart)
+
 ## Project structure
 The root directory contains the NodeJS app for the website. 
 
