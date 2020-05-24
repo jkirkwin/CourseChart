@@ -16,5 +16,7 @@ Name dev branches as `dev/<contributor name>/<feature>`.
 * DB accessibile from Node app
 * Scraper written and deploying to Heroku on master push
 * Project structure decided and updated
-* JSLint setup
+* JSLint setup (or alternative)
 * CI testing running before auto-deploy to Heroku
+* CI testing running for PRs
+* Linting for Python scraper added and running in CI
