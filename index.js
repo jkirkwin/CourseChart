@@ -2,6 +2,8 @@
  * This file is the entry point for the Node app.
  */
 
+"use strict";
+
 const express = require('express');
 const app = express();
 
