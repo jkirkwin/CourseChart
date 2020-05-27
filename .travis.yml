@@ -1,7 +1,16 @@
-# TODO add tests for js and python using this strategy:
-# https://docs.travis-ci.com/user/build-matrix/#using-different-programming-languages-per-job
-language: node_js
+# See https://docs.travis-ci.com/user/build-matrix/#using-different-programming-languages-per-job
+# TODO add tests for js and python
 
-script: 
-  - jshint index.js
-  - node -e "console.log('Hello from Travis CI')"
+jobs:
+  include:
+    - language: python
+      python: 3.8
+      install:
+      - pip install -r scraper/requirements.txt
+      script: 
+      - pylint scraper/scraper.py
+
+    - language: node_js
+      script: 
+      - jshint index.js
+      - node -e "console.log('Hello from Travis CI')"
