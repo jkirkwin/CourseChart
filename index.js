@@ -12,7 +12,7 @@ const client = new Client({
     ssl: {
         rejectUnauthorized: false
       }
-  })
+  });
 
 client.connect();
 
@@ -32,7 +32,9 @@ app.listen(port, onListen);
 
 // print test_table
 client.query('SELECT * FROM test_table;', (err, res) => {
-  if (err) throw err;
+  if (err) {
+      throw err;
+  }
   for (let row of res.rows) {
     console.log(JSON.stringify(row));
   }
