@@ -18,5 +18,8 @@
   "homepage": "https://github.com/jkirkwin/CourseChart#readme",
   "dependencies": {
     "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "pg": "^8.2.1"
   }
 }
