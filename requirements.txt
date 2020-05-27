@@ -1,0 +1,3 @@
+# This file is intentionally empty and is used to tell Heroku that this build 
+# uses Python. The line below includes the specified requirements file.
+-r scraper/requirements.txt
