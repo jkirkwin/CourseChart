@@ -4,6 +4,18 @@
 
 "use strict";
 
+// connect to heroku database
+const { Client } = require('pg');
+
+const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+      }
+  });
+
+client.connect();
+
 const express = require('express');
 const app = express();
 
@@ -17,3 +29,14 @@ function onListen() {
     console.log(`Listening on port ${port}`);
 }
 app.listen(port, onListen);
+
+// print test_table
+client.query('SELECT * FROM test_table;', (err, res) => {
+  if (err) {
+      throw err;
+  }
+  for (let row of res.rows) {
+    console.log(JSON.stringify(row));
+  }
+  client.end();
+});
