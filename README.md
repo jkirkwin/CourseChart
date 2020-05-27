@@ -22,4 +22,3 @@ We are hosting on travis-ci.__com__, not travis-ci.__org__. If you are using Tra
 * DB accessibile from Node app
 * Scraper template created and CI/CD running
 * Project structure decided and updated
-* JSLint setup (or alternative) for CI

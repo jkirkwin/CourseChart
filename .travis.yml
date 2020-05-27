@@ -2,4 +2,6 @@
 # https://docs.travis-ci.com/user/build-matrix/#using-different-programming-languages-per-job
 language: node_js
 
-script: node -e "console.log('Hello from Travis CI')" 
+script: 
+  - jshint index.js
+  - node -e "console.log('Hello from Travis CI')"
