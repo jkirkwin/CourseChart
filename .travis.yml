@@ -1,5 +1,17 @@
 # See https://docs.travis-ci.com/user/build-matrix/#using-different-programming-languages-per-job
 # TODO add tests for js and python
+services:
+  - postgresql
+
+env:
+  global:
+    # https://stackoverflow.com/questions/52586687/set-postgres-database-url-on-travis-ci-for-testing-node-js-application/54206965
+    - DB_HOST=127.0.0.1
+    - DB_USER=postgres
+    - DATABASE_URL=postgres://$DB_USER@$DB_HOST:$PGPORT/ci_test_db
+
+before_script:
+  - psql -c 'CREATE DATABASE ci_test_db;' -U postgres
 
 jobs:
   include:
@@ -11,6 +23,7 @@ jobs:
       - pylint scraper/scraper.py
 
     - language: node_js
+      node_js: node
       script: 
       - jshint index.js
       - node -e "console.log('Hello from Travis CI')"
