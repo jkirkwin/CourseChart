@@ -10,8 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # TODO Explore where we can make savings by multithreading
-# This might be possible once we've got a bunch of links to individual courses
-# Can we examine each page and send results to the database in its own thread?
+# Can we examine each course page and send results to the database in its own thread?
 
 # Scraping constants
 BASE_URL = r'https://www.uvic.ca/calendar/future/undergrad/index.php#/courses'
@@ -79,10 +78,45 @@ def get_dept_page_links(lis):
     return [get_dept_page_link(k) for k in dept_keys]
 
 
-def crawl_dept_pages(links):
-    '''Scrapes each department page given'''
-    # TODO
-    show_list(links)
+def get_class_page_link(li_element):
+    '''Returns the URL for the given class list element'''
+    return li_element.find_element_by_tag_name('a').get_attribute('href')
+
+
+def get_class_page_links(lis):
+    '''Returns the URL for eah class in the given list of <li> elementes'''
+    return [get_class_page_link(li) for li in lis]
+
+
+def get_all_class_links(dept_links, browser):
+    '''Returns links to each class reachable from the given deparmental URLs'''
+    result = []
+    for link in dept_links:
+        browser.get(link)
+        catalog_element = wait_for_catalog_load(browser)
+        list_items = catalog_element.find_elements_by_tag_name('li')
+        class_links = get_class_page_links(list_items)
+        result.extend(class_links)
+    return result
+
+
+def crawl_course_pages(links, browser):
+    '''Scrapes each course page
+
+    Navigates to each link given and extracts the relevant information. 
+    The findings are sent to the database.
+    '''
+    LOGGER.info("Crawling %d course pages", len(links))
+    
+    # TODO visit each page and extract information
+
+
+def crawl_dept_pages(dept_links, browser):
+    '''Scrapes each of the given department pages'''
+    LOGGER.info("Crawling %d department pages", len(dept_links))
+    
+    links = get_all_class_links(dept_links, browser)
+    crawl_course_pages(links, browser)
 
 
 def scrape(browser):
@@ -91,7 +125,7 @@ def scrape(browser):
     catalog_element = wait_for_catalog_load(browser)
     list_items = catalog_element.find_elements_by_tag_name('li')
     dept_links = get_dept_page_links(list_items)
-    crawl_dept_pages(dept_links)
+    crawl_dept_pages(dept_links, browser)
 
 
 if __name__ == '__main__':
