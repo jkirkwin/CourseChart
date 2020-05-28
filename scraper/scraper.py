@@ -2,20 +2,24 @@
 
 Uses Selenium to scrape the UVic academic calendar for course relationships.
 '''
+import logging
 import chromedriver_autoinstaller
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# TODO Add logging
+# TODO Explore where we can make savings by multithreading
+# This might be possible once we've got a bunch of links to individual courses
+# Can we examine each page and send results to the database in its own thread?
 
+# Scraping constants
 BASE_URL = r'https://www.uvic.ca/calendar/future/undergrad/index.php#/courses'
 DEPT_COURSE_LIST_URL_PREFIX = BASE_URL + r'?group='
-
 CALENDAR_WIDGET_ID = r'__KUALI_TLP'
 ACTION_TIMEOUT_SECONDS = 5
 
+LOGGER = logging.getLogger(__name__)
 
 def get_webdriver(headless=True):
     '''Creates and returns a selenium webdriver'''
@@ -80,16 +84,24 @@ def crawl_dept_pages(links):
     # TODO
     show_list(links)
 
+
+def scrape(browser):
+    '''Scrapes the UVic academic calendar using the given web driver'''
+    browser.get(BASE_URL)
+    catalog_element = wait_for_catalog_load(browser)
+    list_items = catalog_element.find_elements_by_tag_name('li')
+    dept_links = get_dept_page_links(list_items)
+    crawl_dept_pages(dept_links)
+
+
 if __name__ == '__main__':
+    logging.basicConfig(level="INFO")
+
     driver = get_webdriver()
 
     # No exceptions are currently being caught here. Instead of guessing ahead,
     # add handling cases as they are identified during testing.
     try:
-        driver.get(BASE_URL)
-        catalog_element = wait_for_catalog_load(driver)
-        list_items = catalog_element.find_elements_by_tag_name('li')
-        dept_links = get_dept_page_links(list_items)
-        crawl_dept_pages(dept_links)
+        scrape(driver)
     finally:
         driver.quit()
