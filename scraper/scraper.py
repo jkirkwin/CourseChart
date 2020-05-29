@@ -14,11 +14,24 @@ from selenium.webdriver.support import expected_conditions as EC
 
 # Scraping constants
 BASE_URL = r'https://www.uvic.ca/calendar/future/undergrad/index.php#/courses'
-DEPT_COURSE_LIST_URL_PREFIX = BASE_URL + r'?group='
 CALENDAR_WIDGET_ID = r'__KUALI_TLP'
 ACTION_TIMEOUT_SECONDS = 5
 
 LOGGER = logging.getLogger(__name__)
+
+
+def main():
+    '''Configures log level and scrapes the UVic course catalog'''
+    logging.basicConfig(level="INFO")
+
+    driver = get_webdriver()
+    # No exceptions are currently being caught here. Instead of guessing ahead,
+    # add handling cases as they are identified during testing.
+    try:
+        scrape(driver)
+    finally:
+        driver.quit()
+
 
 def get_webdriver(headless=True):
     '''Creates and returns a selenium webdriver'''
@@ -34,6 +47,25 @@ def get_webdriver(headless=True):
     return chrome_driver
 
 
+def scrape(browser):
+    '''Scrapes the UVic academic calendar using the given web driver'''
+    browser.get(BASE_URL)
+
+    dept_links = get_links_from_catalog(browser)
+    LOGGER.info("Found %d department pages", len(dept_links))
+
+    class_links = get_class_links(dept_links, browser)
+    LOGGER.info("Found %d course pages", len(class_links))
+
+    crawl_course_pages(class_links, browser)
+
+
+def get_links_from_catalog(browser):
+    '''Return a list of URLs from the catalog'''
+    catalog_element = wait_for_catalog_load(browser)
+    return get_links_from_list_elements(catalog_element)
+
+
 def wait_for_catalog_load(browser, timeout=ACTION_TIMEOUT_SECONDS):
     '''Waits for the Kuali catalog to be rendered
 
@@ -46,56 +78,23 @@ def wait_for_catalog_load(browser, timeout=ACTION_TIMEOUT_SECONDS):
     return wait.until(condition)
 
 
-# Utility for debugging
-# TODO delete
-def show_list(items):
-    '''Prints each element in the list on a new line'''
-    for item in items:
-        print(item)
+def get_links_from_list_elements(continer_element):
+    '''Returns a link for each <li> which is a child of the given element'''
+    lis = continer_element.find_elements_by_tag_name('li')
+    return [get_link_from_list_item(li) for li in lis]
 
 
-def get_dept_keys(lis):
-    '''Returns the key for each department in the given list of <li> elements
-
-    Each <li> corresponds to a single department. The department key is
-    extracted for each one.
-    Department keys are of the form "<Full Name of Department> (<Department Code>)".
-    For example, the key for the Computer Science department is
-                "Computer Science (CSC)"
-    '''
-    get_dept_key = lambda li: li.find_element_by_tag_name('div').get_attribute('name')
-    return [get_dept_key(li) for li in lis]
-
-
-def get_dept_page_link(dept_key):
-    '''Returns the URL for the given deparment's undergraduate course page'''
-    return DEPT_COURSE_LIST_URL_PREFIX + dept_key
-
-
-def get_dept_page_links(lis):
-    '''Returns the URL for each department in the given list of <li> elements'''
-    dept_keys = get_dept_keys(lis)
-    return [get_dept_page_link(k) for k in dept_keys]
-
-
-def get_class_page_link(li_element):
-    '''Returns the URL for the given class list element'''
+def get_link_from_list_item(li_element):
+    '''Returns the href of the first <a> tag in the given <li> element.'''
     return li_element.find_element_by_tag_name('a').get_attribute('href')
 
 
-def get_class_page_links(lis):
-    '''Returns the URL for eah class in the given list of <li> elementes'''
-    return [get_class_page_link(li) for li in lis]
-
-
-def get_all_class_links(dept_links, browser):
+def get_class_links(dept_links, browser):
     '''Returns links to each class reachable from the given deparmental URLs'''
     result = []
     for link in dept_links:
         browser.get(link)
-        catalog_element = wait_for_catalog_load(browser)
-        list_items = catalog_element.find_elements_by_tag_name('li')
-        class_links = get_class_page_links(list_items)
+        class_links = get_links_from_catalog(browser)
         result.extend(class_links)
     return result
 
@@ -103,39 +102,11 @@ def get_all_class_links(dept_links, browser):
 def crawl_course_pages(links, browser):
     '''Scrapes each course page
 
-    Navigates to each link given and extracts the relevant information. 
+    Navigates to each link given and extracts the relevant information.
     The findings are sent to the database.
     '''
-    LOGGER.info("Crawling %d course pages", len(links))
-    
     # TODO visit each page and extract information
 
 
-def crawl_dept_pages(dept_links, browser):
-    '''Scrapes each of the given department pages'''
-    LOGGER.info("Crawling %d department pages", len(dept_links))
-    
-    links = get_all_class_links(dept_links, browser)
-    crawl_course_pages(links, browser)
-
-
-def scrape(browser):
-    '''Scrapes the UVic academic calendar using the given web driver'''
-    browser.get(BASE_URL)
-    catalog_element = wait_for_catalog_load(browser)
-    list_items = catalog_element.find_elements_by_tag_name('li')
-    dept_links = get_dept_page_links(list_items)
-    crawl_dept_pages(dept_links, browser)
-
-
 if __name__ == '__main__':
-    logging.basicConfig(level="INFO")
-
-    driver = get_webdriver()
-
-    # No exceptions are currently being caught here. Instead of guessing ahead,
-    # add handling cases as they are identified during testing.
-    try:
-        scrape(driver)
-    finally:
-        driver.quit()
+    main()
