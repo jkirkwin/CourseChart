@@ -2,9 +2,9 @@
   "name": "coursechart",
   "version": "1.0.0",
   "description": "A visual tool to show the relationships between courses at UVic.",
-  "main": "index.js",
+  "main": "server/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jshint server/index.js"
   },
   "repository": {
     "type": "git",

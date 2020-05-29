@@ -4,7 +4,7 @@ A visual tool to show the relationships between courses at UVic.
 [![Master Branch Build Status](https://travis-ci.com/jkirkwin/CourseChart.svg?branch=master)](https://travis-ci.com/jkirkwin/CourseChart)
 
 ## Project structure
-The root directory contains the NodeJS app for the website. 
+`/server/` contains the NodeJS webserver and associated files. The root directory contains the related `package.json` and `package-lock.json`. Running `npm install` from inside the `server` directory will update the root-level package files. 
 
 `/scraper/` contains the Python web scraper. A root-level `requirements.txt` file is used to signal to the Heroku 'Buildpack' system that this is a Python application.
 
@@ -32,7 +32,3 @@ Dev branches can be deployed manually on Heroku via the web interface, or locall
 See `Procfile` and Heroku website for configuration.
 
 You can run `heroku run scrape -a coursechart` to manually run the Python scraper.
-
-## Outstanding
-* DB setup 
-* DB accessibile from Node app
