@@ -27,5 +27,5 @@ jobs:
     - language: node_js
       node_js: node  # Use the latest stable version of Node
       script: 
-      - node server/index.js &  # Run the server in the background
+      - npm start &  # Run the server in the background
       - npm test

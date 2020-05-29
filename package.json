@@ -4,7 +4,8 @@
   "description": "A visual tool to show the relationships between courses at UVic.",
   "main": "server/index.js",
   "scripts": {
-    "test": "jshint server/index.js"
+    "test": "jshint server/index.js",
+    "start": "node server/index.js"
   },
   "repository": {
     "type": "git",
