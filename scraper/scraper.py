@@ -8,9 +8,22 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import class_listing
 
 # TODO Explore where we can make savings by multithreading
 # Can we examine each course page and send results to the database in its own thread?
+# Python threads' implementation prevents parallelism, so we would need to use a 
+# multiprocess model instead.
+#
+# Option:
+#       This process creates a pool of workers which all read from a queue until either
+#       it is marked as empty or they are killed.
+#       The parent process (the one running this script currently), feeds into the queue
+#       course URLs, department URLs, or even webelement objects to be parsed and converted
+#       into tables in the database.
+# Option:
+#       This process creates a single child process and half of the course processing steps 
+#       run on each one. This requires two browsers.
 
 # Scraping constants
 BASE_URL = r'https://www.uvic.ca/calendar/future/undergrad/index.php#/courses'
@@ -81,7 +94,7 @@ def wait_for_catalog_load(browser, timeout=ACTION_TIMEOUT_SECONDS):
 def get_links_from_list_elements(continer_element):
     '''Returns a link for each <li> which is a child of the given element'''
     lis = continer_element.find_elements_by_tag_name('li')
-    return [get_link_from_list_item(li) for li in lis]
+    return [get_link_from_list_item(li) for li in lis][:20] # TODO Limiting output
 
 
 def get_link_from_list_item(li_element):
@@ -105,7 +118,18 @@ def crawl_course_pages(links, browser):
     Navigates to each link given and extracts the relevant information.
     The findings are sent to the database.
     '''
-    # TODO visit each page and extract information
+    for link in links:
+        browser.get(link)
+        catalog_element = wait_for_catalog_load(browser)
+
+        listing = class_listing.get_from_web_element(catalog_element)
+        send_to_database(listing)
+
+
+def send_to_database(course):
+    ''''''
+    # TODO
+    pass
 
 
 if __name__ == '__main__':
