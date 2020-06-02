@@ -2,62 +2,39 @@
 
 Uses Selenium to scrape the UVic academic calendar for course relationships.
 '''
+
 import logging
-import chromedriver_autoinstaller
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import driver_setup
 import class_listing
 
-# TODO Explore where we can make savings by multithreading
-# Can we examine each course page and send results to the database in its own thread?
-# Python threads' implementation prevents parallelism, so we would need to use a 
-# multiprocess model instead.
-#
-# Option:
-#       This process creates a pool of workers which all read from a queue until either
-#       it is marked as empty or they are killed.
-#       The parent process (the one running this script currently), feeds into the queue
-#       course URLs, department URLs, or even webelement objects to be parsed and converted
-#       into tables in the database.
-# Option:
-#       This process creates a single child process and half of the course processing steps 
-#       run on each one. This requires two browsers.
+# TODO BUG Some course pages are being visited repeatedly, and some might be being missed.
+
+# TODO Explore where we can make savings by multiprocessing
+# Use pools of processes for scraping tasks?
+# Use separate processes to push data into the db(s)?
+
+LOGGER = logging.getLogger(__name__)
 
 # Scraping constants
 BASE_URL = r'https://www.uvic.ca/calendar/future/undergrad/index.php#/courses'
 CALENDAR_WIDGET_ID = r'__KUALI_TLP'
 ACTION_TIMEOUT_SECONDS = 5
 
-LOGGER = logging.getLogger(__name__)
-
 
 def main():
     '''Configures log level and scrapes the UVic course catalog'''
     logging.basicConfig(level="INFO")
 
-    driver = get_webdriver()
+    driver = driver_setup.get_webdriver()
     # No exceptions are currently being caught here. Instead of guessing ahead,
-    # add handling cases as they are identified during testing.
+    # add handling cases if/as they are identified during testing.
     try:
         scrape(driver)
     finally:
         driver.quit()
-
-
-def get_webdriver(headless=True):
-    '''Creates and returns a selenium webdriver'''
-    chromedriver_autoinstaller.install()
-
-    opts = webdriver.ChromeOptions()
-    opts.headless = headless
-    chrome_driver = webdriver.Chrome(options=opts)
-
-    # Allow for a small amount of latency for each action
-    chrome_driver.implicitly_wait(1)
-
-    return chrome_driver
 
 
 def scrape(browser):
@@ -127,9 +104,9 @@ def crawl_course_pages(links, browser):
 
 
 def send_to_database(course):
-    ''''''
-    # TODO
-    pass
+    '''Saves the data about the course to the Postgres database'''
+    # TODO Implement
+    print(course.code + " - " + course.name)
 
 
 if __name__ == '__main__':
