@@ -21,7 +21,7 @@ class ClassListing:
 
 def get_from_web_element(class_element):
     '''Converts a selenium web element into a ClassListing instance'''
-    course_desc = class_element.find_element_by_tag_name('h2').get_attribute('innerHTML')
+    course_desc = class_element.find_element_by_tag_name('h2').text
     (course_code, course_name) = parse_course_description(course_desc)
 
     return ClassListing(course_name, course_code)
@@ -32,7 +32,7 @@ def parse_course_description(desc):
 
     The description must be of the form "<Course Code> - <Course Name>"
     '''
-    seperator_index = desc.index('-')
+    seperator_index = desc.index(' - ')
     code = desc[:seperator_index].strip() # TODO split this into dept code and course number
-    name = desc[seperator_index+1:].strip()
+    name = desc[seperator_index + 2:].strip()
     return (code, name)

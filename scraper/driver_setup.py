@@ -31,7 +31,7 @@ def get_webdriver(headless=True):
     return _get_chromedriver(headless)
 
 
-def _get_chromedriver(headless=True):
+def _get_chromedriver(headless):
     '''Creates and returns a ChromeDriver'''
     opts = selenium.webdriver.ChromeOptions()
     opts.headless = headless

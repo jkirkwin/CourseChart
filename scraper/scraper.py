@@ -10,15 +10,17 @@ from selenium.webdriver.support import expected_conditions as EC
 import driver_setup
 import class_listing
 
-# TODO BUG Some course pages are being visited repeatedly, and some might be being missed.
+# TODO Refactor to prevent memory errors on heroku - recycle browser after n requests
 
 # TODO Explore where we can make savings by multiprocessing
 # Use pools of processes for scraping tasks?
 # Use separate processes to push data into the db(s)?
 
+# TODO Add timestamps to logger
 LOGGER = logging.getLogger(__name__)
 
 # Scraping constants
+
 BASE_URL = r'https://www.uvic.ca/calendar/future/undergrad/index.php#/courses'
 CALENDAR_WIDGET_ID = r'__KUALI_TLP'
 ACTION_TIMEOUT_SECONDS = 5
@@ -52,26 +54,22 @@ def scrape(browser):
 
 def get_links_from_catalog(browser):
     '''Return a list of URLs from the catalog'''
-    catalog_element = wait_for_catalog_load(browser)
+    catalog_element = get_catalog_element(browser)
     return get_links_from_list_elements(catalog_element)
 
 
-def wait_for_catalog_load(browser, timeout=ACTION_TIMEOUT_SECONDS):
-    '''Waits for the Kuali catalog to be rendered
-
-    Waits until either the catalog element is rendered or the timeout is exceeded.
-    Returns the catalog element if it renders in time.
-    '''
+def get_catalog_element(browser, timeout=ACTION_TIMEOUT_SECONDS):
+    '''Waits for the Kuali catalog to be rendered and returns a <div> containing it.'''
     wait = WebDriverWait(browser, timeout)
     search_key = (By.ID, CALENDAR_WIDGET_ID)
-    condition = EC.presence_of_element_located(search_key)
-    return wait.until(condition)
+    element_found = EC.presence_of_element_located(search_key)
+    return wait.until(element_found)
 
 
 def get_links_from_list_elements(continer_element):
     '''Returns a link for each <li> which is a child of the given element'''
     lis = continer_element.find_elements_by_tag_name('li')
-    return [get_link_from_list_item(li) for li in lis][:20] # TODO Limiting output
+    return [get_link_from_list_item(li) for li in lis]
 
 
 def get_link_from_list_item(li_element):
@@ -96,18 +94,59 @@ def crawl_course_pages(links, browser):
     The findings are sent to the database.
     '''
     for link in links:
-        browser.get(link)
-        catalog_element = wait_for_catalog_load(browser)
+        crawl_course_page(link, browser)
 
-        listing = class_listing.get_from_web_element(catalog_element)
-        send_to_database(listing)
+
+def crawl_course_page(link, browser):
+    '''Scrapes the given course page and sends the results to the database'''
+    get_and_wait_for_ajax_complete(link, browser)
+
+    catalog_element = get_catalog_element(browser)
+    listing = class_listing.get_from_web_element(catalog_element)
+    send_to_database(listing)
+
+
+def get_and_wait_for_ajax_complete(link, browser):
+    '''Gets the given page and returns once the AJAX requests have completed.
+
+    This function assumes that the current page is part of the UVic academic
+    calendar. It may fail if this is not the case. If you are navigating to
+    a course page from some other page, a simple get() followed by
+    get_catalog_element() should suffice.
+
+    This is done by caching the value of the header element which title's the
+    calendar <div> and waiting until it is updated to a different value.
+
+    This may not guarantee that all AJAX requests are complete, but it should
+    ensure that those that are replacing course information have finished.
+
+    If the current page's url is the same as the provided link, then no action
+    is taken.
+    '''
+
+    if browser.current_url == link:
+        return
+
+    header = get_catalog_element(browser).find_element_by_tag_name('h2')
+    initial_text = header.text
+
+    browser.get(link)
+    wait = WebDriverWait(browser, ACTION_TIMEOUT_SECONDS)
+
+    def get_header_element(browser):
+        catalog = get_catalog_element(browser)
+        return catalog.find_element_by_tag_name('h2')
+
+    def header_updated(browser):
+        return get_header_element(browser).text != initial_text
+
+    wait.until(header_updated)
 
 
 def send_to_database(course):
     '''Saves the data about the course to the Postgres database'''
     # TODO Implement
     print(course.code + " - " + course.name)
-
 
 if __name__ == '__main__':
     main()
