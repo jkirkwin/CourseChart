@@ -16,7 +16,6 @@ import class_listing
 # Use pools of processes for scraping tasks?
 # Use separate processes to push data into the db(s)?
 
-# TODO Add timestamps to logger
 LOGGER = logging.getLogger(__name__)
 
 # Scraping constants
@@ -28,7 +27,10 @@ ACTION_TIMEOUT_SECONDS = 5
 
 def main():
     '''Configures log level and scrapes the UVic course catalog'''
-    logging.basicConfig(level="INFO")
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
 
     driver = driver_setup.get_webdriver()
     # No exceptions are currently being caught here. Instead of guessing ahead,
