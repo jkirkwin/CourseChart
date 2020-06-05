@@ -4,6 +4,7 @@ Uses Selenium to scrape the UVic academic calendar for course relationships.
 '''
 
 import logging
+from functools import partial
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -32,25 +33,39 @@ def main():
         format='%(asctime)s %(levelname)-8s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
+    scrape()
+
+
+def scrape():
+    '''Scrapes the UVic academic calendar using the given web driver'''
+
+    dept_links = run_browser_task(get_dept_links)
+    LOGGER.info("Found %d department pages", len(dept_links))
+
+    for link in dept_links:
+        task = partial(crawl_dept_page, link)
+        run_browser_task(task)
+
+
+def run_browser_task(run_task):
+    '''Starts a new browser, runs the given task, and returns the result'''
     driver = driver_setup.get_webdriver()
-    # No exceptions are currently being caught here. Instead of guessing ahead,
-    # add handling cases if/as they are identified during testing.
     try:
-        scrape(driver)
+        return run_task(driver)
     finally:
         driver.quit()
 
 
-def scrape(browser):
-    '''Scrapes the UVic academic calendar using the given web driver'''
+def get_dept_links(browser):
+    '''Return a list of all undergrad department page links'''
     browser.get(BASE_URL)
+    return get_links_from_catalog(browser)
 
-    dept_links = get_links_from_catalog(browser)
-    LOGGER.info("Found %d department pages", len(dept_links))
 
-    class_links = get_class_links(dept_links, browser)
-    LOGGER.info("Found %d course pages", len(class_links))
-
+def crawl_dept_page(dept_link, browser):
+    '''Scrapes each course page accessible via the given department link'''
+    browser.get(dept_link)
+    class_links = get_links_from_catalog(browser)
     crawl_course_pages(class_links, browser)
 
 
@@ -77,16 +92,6 @@ def get_links_from_list_elements(continer_element):
 def get_link_from_list_item(li_element):
     '''Returns the href of the first <a> tag in the given <li> element.'''
     return li_element.find_element_by_tag_name('a').get_attribute('href')
-
-
-def get_class_links(dept_links, browser):
-    '''Returns links to each class reachable from the given deparmental URLs'''
-    result = []
-    for link in dept_links:
-        browser.get(link)
-        class_links = get_links_from_catalog(browser)
-        result.extend(class_links)
-    return result
 
 
 def crawl_course_pages(links, browser):
