@@ -10,9 +10,9 @@ See https://github.com/heroku/heroku-buildpack-google-chrome.
 The path to the Chrome web driver binary must be stored in environment variable
 CHROMEDRIVER_PATH. This has been set as a "Config Var" on Heroku.
 
-For local development, you will need to install both Chrome and the 
+For local development, you will need to install both Chrome and the
 ChromeDriver (https://chromedriver.chromium.org/downloads) and either set the
-above environment variables to the correct locations or add the Chrome and 
+above environment variables to the correct locations or add the Chrome and
 Chromedriver binaries to your PATH.
 '''
 
@@ -36,7 +36,7 @@ def _get_chromedriver(headless):
     '''Creates and returns a ChromeDriver'''
     opts = selenium.webdriver.ChromeOptions()
     opts.headless = headless
-    
+
     chrome_bin = _try_get_chome_binary_path()
     if chrome_bin:
         opts.binary_location = chrome_bin
@@ -46,7 +46,7 @@ def _get_chromedriver(headless):
         chrome_driver = selenium.webdriver.Chrome(chromedriver_path, options=opts)
     else:
         chrome_driver = selenium.webdriver.Chrome(options=opts)
-    
+
     # Allow for a small amount of latency for each action
     chrome_driver.implicitly_wait(1)
 
@@ -69,7 +69,7 @@ def _try_get_chome_binary_path():
 def _try_get_env_var(name):
     '''Tries to read the given variable from the environment
 
-    If no such variable is defined, a message is logged and the function 
+    If no such variable is defined, a message is logged and the function
     returns None.
     '''
     try:
