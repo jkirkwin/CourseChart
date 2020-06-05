@@ -2,10 +2,16 @@
   "name": "coursechart",
   "version": "1.0.0",
   "description": "A visual tool to show the relationships between courses at UVic.",
-  "main": "server/index.js",
+  "main": "index.js",
+  "babel": {
+    "presets" : [
+      "@babel/preset-env",
+      "@babel/preset-react"
+    ]
+  } ,
   "scripts": {
     "test": "jshint server/index.js",
-    "start": "node server/index.js"
+    "start": "webpack-dev-server --open"
   },
   "repository": {
     "type": "git",
