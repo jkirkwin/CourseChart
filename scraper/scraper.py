@@ -11,7 +11,6 @@ from selenium.webdriver.support import expected_conditions as EC
 import driver_setup
 import class_listing
 
-# TODO Refactor to prevent memory errors on heroku - recycle browser after n requests
 
 # TODO Explore where we can make savings by multiprocessing
 # Use pools of processes for scraping tasks?
@@ -37,13 +36,20 @@ def main():
 
 
 def scrape():
-    '''Scrapes the UVic academic calendar using the given web driver'''
+    '''Scrapes the UVic academic calendar using the given web driver
+
+    The browser is periodically killed and replaced to reduce memory
+    consumption.
+    '''
 
     dept_links = run_browser_task(get_dept_links)
     LOGGER.info("Found %d department pages", len(dept_links))
 
-    for link in dept_links:
-        task = partial(crawl_dept_page, link)
+    # Process department pages in groups, using a new browser for each one
+    batch_size = 5  # Arbitrary choice
+    dept_batches = partition_list(dept_links, batch_size)
+    for batch in dept_batches:
+        task = partial(crawl_dept_pages, batch)
         run_browser_task(task)
 
 
@@ -60,6 +66,18 @@ def get_dept_links(browser):
     '''Return a list of all undergrad department page links'''
     browser.get(BASE_URL)
     return get_links_from_catalog(browser)
+
+
+def partition_list(items, group_size):
+    '''Return a list of sublists of the given list'''
+    num_items = len(items)
+    return [items[i:i+group_size] for i in range(0, num_items, group_size)]
+
+
+def crawl_dept_pages(dept_links, browser):
+    '''Scrapes each department page given'''
+    for link in dept_links:
+        crawl_dept_page(link, browser)
 
 
 def crawl_dept_page(dept_link, browser):
