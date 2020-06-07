@@ -48,7 +48,7 @@ def scrape():
     LOGGER.info("Found %d department pages", len(dept_links))
 
     # Process department pages in groups.
-    batch_size = 10  # Arbitrary choice
+    batch_size = 5  # Arbitrary choice
     dept_batches = partition_list(dept_links, batch_size)
     scrape_batches(dept_batches)
 
