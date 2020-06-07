@@ -46,7 +46,7 @@ def scrape():
     LOGGER.info("Found %d department pages", len(dept_links))
 
     # Process department pages in groups, using a new browser for each one
-    batch_size = 5  # Arbitrary choice
+    batch_size = 10  # Arbitrary choice
     dept_batches = partition_list(dept_links, batch_size)
     for batch in dept_batches:
         task = partial(crawl_dept_pages, batch)
@@ -70,6 +70,7 @@ def get_dept_links(browser):
 
 def partition_list(items, group_size):
     '''Return a list of sublists of the given list'''
+    assert group_size > 0
     num_items = len(items)
     return [items[i:i+group_size] for i in range(0, num_items, group_size)]
 
@@ -83,6 +84,9 @@ def crawl_dept_pages(dept_links, browser):
 def crawl_dept_page(dept_link, browser):
     '''Scrapes each course page accessible via the given department link'''
     browser.get(dept_link)
+
+    LOGGER.info("Crawling department url: {}".format(dept_link))
+
     class_links = get_links_from_catalog(browser)
     crawl_course_pages(class_links, browser)
 
