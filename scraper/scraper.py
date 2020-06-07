@@ -5,6 +5,7 @@ Uses Selenium to scrape the UVic academic calendar for course relationships.
 
 import logging
 from functools import partial
+from multiprocessing import Pool
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,8 +14,9 @@ import class_listing
 
 
 # TODO Explore where we can make savings by multiprocessing
-# Use pools of processes for scraping tasks?
 # Use separate processes to push data into the db(s)?
+
+# TODO prevent Heroku from putting the app to sleep while the scraper is running.
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,12 +47,10 @@ def scrape():
     dept_links = run_browser_task(get_dept_links)
     LOGGER.info("Found %d department pages", len(dept_links))
 
-    # Process department pages in groups, using a new browser for each one
+    # Process department pages in groups.
     batch_size = 10  # Arbitrary choice
     dept_batches = partition_list(dept_links, batch_size)
-    for batch in dept_batches:
-        task = partial(crawl_dept_pages, batch)
-        run_browser_task(task)
+    scrape_batches(dept_batches)
 
 
 def run_browser_task(run_task):
@@ -60,6 +60,27 @@ def run_browser_task(run_task):
         return run_task(driver)
     finally:
         driver.quit()
+
+
+def _scrape_batch(links):
+    '''A task to be executed by a worker. Scrapes the given links.
+
+    Local objects cannot be pickled, so this must be defined as a top level
+    function.
+    '''
+    task = partial(crawl_dept_pages, links)
+    run_browser_task(task)
+
+
+def scrape_batches(batches):
+    '''Uses a pool of workers to process the given batches of department links.
+
+    Each batch is given to a worker and a separate browser is used for each
+    call to prevent memory overages.
+    '''
+    num_workers = 2
+    with Pool(num_workers) as pool:
+        pool.map(_scrape_batch, batches)
 
 
 def get_dept_links(browser):
@@ -85,7 +106,7 @@ def crawl_dept_page(dept_link, browser):
     '''Scrapes each course page accessible via the given department link'''
     browser.get(dept_link)
 
-    LOGGER.info("Crawling department url: {}".format(dept_link))
+    LOGGER.info("Crawling department url: %s", format(dept_link))
 
     class_links = get_links_from_catalog(browser)
     crawl_course_pages(class_links, browser)
