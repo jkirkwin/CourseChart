@@ -22,5 +22,5 @@ const getTestTable = (req,res) => {
         }
         res.send(list)
         //client.end()     
-    })
+    });
 }

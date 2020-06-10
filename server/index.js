@@ -37,7 +37,7 @@ app.listen(port, onListen);
 
 * Once buttons etc. are implemented we can be redirected from the landing page.
 */
-app.get('/test_table',db.getTestTable)
+app.get('/test_table',db.getTestTable);
 
 
 // print test_table
