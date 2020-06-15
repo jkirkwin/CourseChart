@@ -22,7 +22,7 @@ jobs:
       install:
       - pip install -r scraper/requirements.txt
       script: 
-      - pylint scraper/scraper.py
+      - pylint --fail-under=9 scraper  # Lint all .py files in the directory
 
     - language: node_js
       node_js: node  # Use the latest stable version of Node
