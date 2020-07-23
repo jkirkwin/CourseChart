@@ -24,7 +24,7 @@ const db = require('./queries');
 const defaultPort = 80;
 const port = process.env.PORT || defaultPort; 
 
-app.get('/', (req, res) => res.send("Hello"));
+app.get('/', (req, res) => {res.send("Hello")});
 
 function onListen() {
     console.log(`Listening on port ${port}`);

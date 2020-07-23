@@ -22,5 +22,9 @@ const getTestTable = (req,res) => {
         }
         res.send(list)
         //client.end()     
-    });
-}
+    })
+};
+
+module.exports = {
+    getTestTable:getTestTable
+};
