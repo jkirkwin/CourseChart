@@ -4,18 +4,6 @@
 
 "use strict";
 
-// connect to heroku database
-const { Client } = require('pg');
-
-const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-      }
-  });
-
-client.connect();
-
 const express = require('express');
 const app = express();
 const db = require('./queries');
@@ -37,16 +25,5 @@ app.listen(port, onListen);
 
 * Once buttons etc. are implemented we can be redirected from the landing page.
 */
+app.get('/',db.printTestTable);
 app.get('/test_table',db.getTestTable);
-
-
-// print test_table
-client.query('SELECT * FROM test_table;', (err, res) => {
-  if (err) {
-      throw err;
-  }
-  for (let row of res.rows) {
-    console.log(JSON.stringify(row));
-  }
-  client.end();
-});

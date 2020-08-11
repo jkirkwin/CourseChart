@@ -22,11 +22,23 @@ const getTestTable = (req,res) => {
         for (let row of result.rows) {
           list.push(JSON.stringify(row));
         }
-        res.send(list)
+        res.send(list);
         //client.end()     
-    })
+    });
 };
+// print test_table
+function printTestTable() {
+    client.query('SELECT * FROM test_table;', (err, result) => {
+        if (err) {
+            throw err;
+        }
+        for (let row of result.rows) {
+            console.log(JSON.stringify(row));
+        }
+    });    
+}
 
 module.exports = {
-    getTestTable:getTestTable
+    getTestTable:getTestTable,
+    printTestTable:printTestTable
 };
