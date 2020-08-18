@@ -11,17 +11,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import driver_setup
 import class_listing
+import db
 
 
 # TODO Explore where we can make savings by multiprocessing
-# Use separate processes to push data into the db(s)?
+#       Use separate processes to push data into the db(s)?
 
 # TODO prevent Heroku from putting the app to sleep while the scraper is running.
 
+
 LOGGER = logging.getLogger(__name__)
 
-# Scraping constants
 
+# Scraping constants
 BASE_URL = r'https://www.uvic.ca/calendar/future/undergrad/index.php#/courses'
 CALENDAR_WIDGET_ID = r'__KUALI_TLP'
 ACTION_TIMEOUT_SECONDS = 5
@@ -199,4 +201,7 @@ def send_to_database(course):
     print(course.code + " - " + course.name)
 
 if __name__ == '__main__':
+    # TODO remove this once actual database functions are implemented & available
+    db.print_test_table()
+
     main()
