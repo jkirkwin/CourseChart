@@ -2,7 +2,7 @@
 
 import logging
 from os import environ
-import psycopg2 # TODO add this to requirements.txt
+import psycopg2
 
 
 LOGGER = logging.getLogger(__name__)
