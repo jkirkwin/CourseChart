@@ -1,8 +1,11 @@
 '''Holds connection logic and utilities for the PSQL database'''
 
-
+import logging
 from os import environ
 import psycopg2 # TODO add this to requirements.txt
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 DB_URI = 'DATABASE_URL'
@@ -12,14 +15,23 @@ def get_connection():
     ''' Creates and returns a new connection to the postgres database.
     '''
     url = _try_get_url()
-    if url:
-        # Parse the URI and create a connection
+    if not url:
+        raise EnvironmentError('Unable to read URL from environment')
+
+    return connect_to_url(url)
+
+
+def connect_to_url(url):
+    ''' Creates and returns a new connection to the postgres database at the given URI.
+    '''
+    try:
         connection_params_dict = psycopg2.extensions.parse_dsn(url)
-        return psycopg2.connect(**connection_params_dict)
-    else:
-        # TODO log a message and return None or throw an exception
-        print('Unable to read URL from environment')
-        return None
+        connection = psycopg2.connect(**connection_params_dict)
+        LOGGER.info("Created PSQL connection")
+        return connection
+    except:
+        LOGGER.error('Unable to connect to PSQL database with URI')
+        raise
 
 
 def _try_get_url():
@@ -27,17 +39,20 @@ def _try_get_url():
     '''
     try:
         return environ[DB_URI]
-    except:
+    except KeyError:
+        LOGGER.warning("Unable to read environment variable '%s'", DB_URI)
         return None
 
 
-def get_test_table_contents(connection=None):
-    ''' Returns the full contents of the test table.
+def print_test_table(connection=None):
+    ''' Prints the full contents of the test table.
 
     If no connection is provided, a new one is created for this task.
     '''
     if not connection:
         connection = get_connection()
+
     cursor = connection.cursor()
     cursor.execute('SELECT * FROM test_table;')
-    return cursor.fetchall()
+    for row in cursor.fetchall():
+        print(row)
