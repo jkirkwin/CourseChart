@@ -1,6 +1,7 @@
 '''Entry point script for the web scraper.
 
-Uses Selenium to scrape the UVic academic calendar for course relationships.
+Uses Selenium to scrape the UVic academic calendar for course relationships 
+and saves the information to the Postgres database
 '''
 
 import logging
@@ -154,7 +155,7 @@ def crawl_course_page(link, browser):
     get_and_wait_for_ajax_complete(link, browser)
 
     catalog_element = get_catalog_element(browser)
-    listing = class_listing.get_from_web_element(catalog_element)
+    listing = class_listing.get_from_web_element(catalog_element, link)
     send_to_database(listing)
 
 
@@ -197,11 +198,9 @@ def get_and_wait_for_ajax_complete(link, browser):
 
 def send_to_database(course):
     '''Saves the data about the course to the Postgres database'''
-    # TODO Implement
+    # TODO actually insert the course and url into the db
     print(course.code + " - " + course.name)
+    print(course.url)
 
 if __name__ == '__main__':
-    # TODO remove this once actual database functions are implemented & available
-    db.print_test_table()
-
     main()

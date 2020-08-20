@@ -5,26 +5,17 @@
 class ClassListing:
     '''Represents a listing in the academic calendar'''
 
-    def __init__(self, name, code):
+    def __init__(self, name, code, url):
         '''Creates a ClassListing'''
         self.name = name
         self.code = code
+        self.url = url
 
-    def get_name(self):
-        '''Returns the course name'''
-        return self.name
-
-    def get_code(self):
-        '''Returns the course code'''
-        return self.code
-
-
-def get_from_web_element(class_element):
+def get_from_web_element(class_element, url):
     '''Converts a selenium web element into a ClassListing instance'''
     course_desc = class_element.find_element_by_tag_name('h2').text
     (course_code, course_name) = parse_course_description(course_desc)
-
-    return ClassListing(course_name, course_code)
+    return ClassListing(course_name, course_code, url)
 
 
 def parse_course_description(desc):
