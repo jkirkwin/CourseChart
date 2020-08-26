@@ -13,17 +13,14 @@ client.connect();
 
 const getTestTable = (req,res) => {
     var list = [];
-    //res.json({ info: 'Node.js, Express, and PSQL Api'})
     client.query('SELECT * FROM test_table;', (err, result) => {
         if (err) {
             throw err;
         }
-        //res.send(result)
         for (let row of result.rows) {
           list.push(JSON.stringify(row));
         }
-        res.send(list);
-        //client.end()     
+        res.send(list);    
     });
 };
 // print test_table
@@ -38,7 +35,21 @@ function printTestTable() {
     });    
 }
 
+const getCourseLink = (req,res) => {
+    var list = [];
+    client.query('SELECT * FROM course_urls;', (err, result) => {
+        if (err) {
+            throw err;
+        }
+        for (let row of result.rows) {
+          list.push(JSON.stringify(row));
+        }
+        res.send(list);    
+    });
+};
+
 module.exports = {
     getTestTable:getTestTable,
-    printTestTable:printTestTable
+    printTestTable:printTestTable,
+    getCourseLink:getCourseLink
 };

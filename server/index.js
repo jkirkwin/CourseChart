@@ -27,3 +27,4 @@ app.listen(port, onListen);
 */
 app.get('/',db.printTestTable);
 app.get('/test_table',db.getTestTable);
+app.get('/course_links',db.getCourseLink);
