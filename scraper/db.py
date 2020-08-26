@@ -11,19 +11,16 @@ LOGGER = logging.getLogger(__name__)
 DB_URI = 'DATABASE_URL'
 
 
-def get_connection():
+def connect(url=None):
     ''' Creates and returns a new connection to the postgres database.
+
+        If no URL is provided, use the DATABASE_URL environment variable.
     '''
-    url = _try_get_url()
-    if not url:
-        raise EnvironmentError('Unable to read URL from environment')
-
-    return connect_to_url(url)
-
-
-def connect_to_url(url):
-    ''' Creates and returns a new connection to the postgres database at the given URI.
-    '''
+    if url is None:
+        envUrl = _try_get_url()
+        if envUrl is None:
+            raise EnvironmentError('Unable to read URL from environment')
+        url = envUrl
     try:
         connection_params_dict = psycopg2.extensions.parse_dsn(url)
         connection = psycopg2.connect(**connection_params_dict)
@@ -50,7 +47,7 @@ def print_test_table(connection=None):
     If no connection is provided, a new one is created for this task.
     '''
     if not connection:
-        connection = get_connection()
+        connection = connect()
 
     cursor = connection.cursor()
     cursor.execute('SELECT * FROM test_table;')
