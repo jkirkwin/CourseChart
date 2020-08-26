@@ -5,6 +5,7 @@ from os import environ
 import psycopg2
 
 
+# TODO update logging to work for multiple processes
 LOGGER = logging.getLogger(__name__)
 
 
