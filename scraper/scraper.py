@@ -19,6 +19,8 @@ import db
 # TODO prevent Heroku from putting the app to sleep while the scraper is running.
 
 
+# TODO Logging from sub-processes does not work.
+# https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
 LOGGER = logging.getLogger(__name__)
 
 
