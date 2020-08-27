@@ -198,13 +198,19 @@ def get_and_wait_for_ajax_complete(link, browser):
     wait.until(header_updated)
 
 
+# Silently allow updates
+INSERT_URL_QUERY_TEMPLATE = sql.SQL('''INSERT INTO course_urls 
+VALUES (%s, %s) 
+ON CONFLICT (course_code) 
+DO UPDATE SET url=EXCLUDED.url
+''')
+
+
 def send_to_database(course, db_connection):
     '''Saves the data about the course to the Postgres database'''
     try: 
-        # TODO deal with case of the key already existing in the table
         cursor = db_connection.cursor() 
-        query_template = sql.SQL('INSERT INTO course_urls VALUES (%s, %s)')   
-        cursor.execute(query_template, (course.code, course.url))
+        cursor.execute(INSERT_URL_QUERY_TEMPLATE, (course.code, course.url))
         db_connection.commit()
 
     except Exception as error:
