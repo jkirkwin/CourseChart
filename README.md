@@ -32,3 +32,9 @@ Dev branches can be deployed manually on Heroku via the web interface, or locall
 See `Procfile` and Heroku website for configuration.
 
 You can run `heroku run scrape -a coursechart` to manually run the Python scraper.
+
+## Database
+
+The web scraper saves the course data in a postgres database hosted via Heroku ([documentation](https://devcenter.heroku.com/articles/heroku-postgresql)). 
+
+You can open a postgres terminal with `heroku pg:psql`. This requires installing Postgres. On windows, run the installer and add the `bin` directory to your PATH.
