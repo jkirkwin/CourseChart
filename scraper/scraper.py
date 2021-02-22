@@ -7,6 +7,7 @@ and saves the information to the Postgres database
 import logging
 from functools import partial
 from multiprocessing import Pool
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -154,11 +155,12 @@ def crawl_course_pages(links, browser, db_connection):
 
 def crawl_course_page(link, browser, db_connection):
     '''Scrapes the given course page and sends the results to the database'''
-    get_and_wait_for_ajax_complete(link, browser)
+    loaded = get_and_wait_for_ajax_complete(link, browser)
 
-    catalog_element = get_catalog_element(browser)
-    listing = class_listing.get_from_web_element(catalog_element, link)
-    send_to_database(listing, db_connection)
+    if loaded:
+        catalog_element = get_catalog_element(browser)
+        listing = class_listing.get_from_web_element(catalog_element, link)
+        send_to_database(listing, db_connection)
 
 
 def get_and_wait_for_ajax_complete(link, browser):
@@ -177,6 +179,8 @@ def get_and_wait_for_ajax_complete(link, browser):
 
     If the current page's url is the same as the provided link, then no action
     is taken.
+
+    Returns True if the AJAX request completed within the allowed timeout.
     '''
 
     if browser.current_url == link:
@@ -195,8 +199,12 @@ def get_and_wait_for_ajax_complete(link, browser):
     def header_updated(browser):
         return get_header_element(browser).text != initial_text
 
-    wait.until(header_updated)
-
+    try:
+        wait.until(header_updated)
+        return True
+    except TimeoutException:
+        LOGGER.error("TimeoutException thrown. Page %s failed to load", link)
+        return False
 
 # Silently allow updates
 INSERT_URL_QUERY_TEMPLATE = sql.SQL('''INSERT INTO course_urls 
@@ -207,7 +215,7 @@ DO UPDATE SET url=EXCLUDED.url
 
 
 def send_to_database(course, db_connection):
-    '''Saves the data about the course to the Postgres database'''
+    '''Saves the course data to the Postgres database'''
     try: 
         cursor = db_connection.cursor() 
         cursor.execute(INSERT_URL_QUERY_TEMPLATE, (course.code, course.url))
