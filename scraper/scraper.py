@@ -1,25 +1,27 @@
 '''Entry point script for the web scraper.
 
-Uses Selenium to scrape the UVic academic calendar for course relationships.
+Uses Selenium to scrape the UVic academic calendar for course relationships 
+and saves the information to the Postgres database
 '''
 
 import logging
 from functools import partial
 from multiprocessing import Pool
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from psycopg2 import sql
 import driver_setup
 import class_listing
 import db
 
 
-# TODO Explore where we can make savings by multiprocessing
-#       Use separate processes to push data into the db(s)?
-
 # TODO prevent Heroku from putting the app to sleep while the scraper is running.
 
 
+# TODO Logging from sub-processes does not work.
+# https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
 LOGGER = logging.getLogger(__name__)
 
 
@@ -52,7 +54,7 @@ def scrape():
     # Process department pages in groups.
     batch_size = 5  # Arbitrary choice
     dept_batches = partition_list(dept_links, batch_size)
-    scrape_batches(dept_batches)
+    scrape_dept_batches(dept_batches)
 
 
 def run_browser_task(run_task):
@@ -64,17 +66,19 @@ def run_browser_task(run_task):
         driver.quit()
 
 
-def _scrape_batch(links):
-    '''A task to be executed by a worker. Scrapes the given links.
-
-    Local objects cannot be pickled, so this must be defined as a top level
-    function.
+# Local objects cannot be pickled, so this must be defined as a top level function.
+def _scrape_depts(links):
+    '''A task to be executed by a worker process. Scrapes the given department links.
     '''
-    task = partial(crawl_dept_pages, links)
+    # Create a connection to the database to be used by this process.
+    # Note that psycopg2 connections cannot be shared between processes.
+    conn = db.connect()
+    task = partial(crawl_dept_pages, links, conn)
     run_browser_task(task)
+    conn.close()
 
 
-def scrape_batches(batches):
+def scrape_dept_batches(batches):
     '''Uses a pool of workers to process the given batches of department links.
 
     Each batch is given to a worker and a separate browser is used for each
@@ -82,7 +86,7 @@ def scrape_batches(batches):
     '''
     num_workers = 2
     with Pool(num_workers) as pool:
-        pool.map(_scrape_batch, batches)
+        pool.map(_scrape_depts, batches)
 
 
 def get_dept_links(browser):
@@ -98,20 +102,20 @@ def partition_list(items, group_size):
     return [items[i:i+group_size] for i in range(0, num_items, group_size)]
 
 
-def crawl_dept_pages(dept_links, browser):
+def crawl_dept_pages(dept_links, db_connection, browser):
     '''Scrapes each department page given'''
     for link in dept_links:
-        crawl_dept_page(link, browser)
+        crawl_dept_page(link, browser, db_connection)
 
 
-def crawl_dept_page(dept_link, browser):
+def crawl_dept_page(dept_link, browser, db_connection):
     '''Scrapes each course page accessible via the given department link'''
     browser.get(dept_link)
 
     LOGGER.info("Crawling department url: %s", format(dept_link))
 
     class_links = get_links_from_catalog(browser)
-    crawl_course_pages(class_links, browser)
+    crawl_course_pages(class_links, browser, db_connection)
 
 
 def get_links_from_catalog(browser):
@@ -139,23 +143,24 @@ def get_link_from_list_item(li_element):
     return li_element.find_element_by_tag_name('a').get_attribute('href')
 
 
-def crawl_course_pages(links, browser):
+def crawl_course_pages(links, browser, db_connection):
     '''Scrapes each course page
 
-    Navigates to each link given and extracts the relevant information.
-    The findings are sent to the database.
+    Navigates to each link given, extracts the relevant information, and stores
+    the findings to the database using the provided connection.
     '''
     for link in links:
-        crawl_course_page(link, browser)
+        crawl_course_page(link, browser, db_connection)
 
 
-def crawl_course_page(link, browser):
+def crawl_course_page(link, browser, db_connection):
     '''Scrapes the given course page and sends the results to the database'''
-    get_and_wait_for_ajax_complete(link, browser)
+    loaded = get_and_wait_for_ajax_complete(link, browser)
 
-    catalog_element = get_catalog_element(browser)
-    listing = class_listing.get_from_web_element(catalog_element)
-    send_to_database(listing)
+    if loaded:
+        catalog_element = get_catalog_element(browser)
+        listing = class_listing.get_from_web_element(catalog_element, link)
+        send_to_database(listing, db_connection)
 
 
 def get_and_wait_for_ajax_complete(link, browser):
@@ -174,6 +179,8 @@ def get_and_wait_for_ajax_complete(link, browser):
 
     If the current page's url is the same as the provided link, then no action
     is taken.
+
+    Returns True if the AJAX request completed within the allowed timeout.
     '''
 
     if browser.current_url == link:
@@ -192,16 +199,32 @@ def get_and_wait_for_ajax_complete(link, browser):
     def header_updated(browser):
         return get_header_element(browser).text != initial_text
 
-    wait.until(header_updated)
+    try:
+        wait.until(header_updated)
+        return True
+    except TimeoutException:
+        LOGGER.error("TimeoutException thrown. Page %s failed to load", link)
+        return False
+
+# Silently allow updates
+INSERT_URL_QUERY_TEMPLATE = sql.SQL('''INSERT INTO course_urls 
+VALUES (%s, %s) 
+ON CONFLICT (course_code) 
+DO UPDATE SET url=EXCLUDED.url
+''')
 
 
-def send_to_database(course):
-    '''Saves the data about the course to the Postgres database'''
-    # TODO Implement
-    print(course.code + " - " + course.name)
+def send_to_database(course, db_connection):
+    '''Saves the course data to the Postgres database'''
+    try: 
+        cursor = db_connection.cursor() 
+        cursor.execute(INSERT_URL_QUERY_TEMPLATE, (course.code, course.url))
+        db_connection.commit()
+
+    except Exception as error:
+        LOGGER.error(error)
+        db_connection.rollback()
+    
 
 if __name__ == '__main__':
-    # TODO remove this once actual database functions are implemented & available
-    db.print_test_table()
-
     main()

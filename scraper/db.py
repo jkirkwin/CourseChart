@@ -5,6 +5,7 @@ from os import environ
 import psycopg2
 
 
+# TODO update logging to work for multiple processes
 LOGGER = logging.getLogger(__name__)
 
 
@@ -17,10 +18,10 @@ def connect(url=None):
         If no URL is provided, use the DATABASE_URL environment variable.
     '''
     if url is None:
-        envUrl = _try_get_url()
-        if envUrl is None:
+        env_url = _try_get_url()
+        if env_url is None:
             raise EnvironmentError('Unable to read URL from environment')
-        url = envUrl
+        url = env_url
     try:
         connection_params_dict = psycopg2.extensions.parse_dsn(url)
         connection = psycopg2.connect(**connection_params_dict)
